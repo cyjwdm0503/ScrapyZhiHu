@@ -16,7 +16,7 @@ NEWSPIDER_MODULE = 'ScrapyZhiHu.spiders'
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = 'ScrapyZhiHu (+http://www.yourdomain.com)'
+USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36'
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS=32
@@ -30,16 +30,17 @@ NEWSPIDER_MODULE = 'ScrapyZhiHu.spiders'
 #CONCURRENT_REQUESTS_PER_IP=16
 
 # Disable cookies (enabled by default)
-#COOKIES_ENABLED=False
+COOKIES_ENABLED=False
 
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED=False
 
 # Override the default request headers:
-#DEFAULT_REQUEST_HEADERS = {
-#   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-#   'Accept-Language': 'en',
-#}
+DEFAULT_REQUEST_HEADERS = {
+   'Accept': 'application/json, text/javascript, */*; q=0.01',
+   'Accept-Language': 'en',
+   'Cookie':'Cookie: s=ud017p91v1; xq_a_token=9fdfe7dac31a1e3b212fb58edd7c4488d54a1335; xq_r_token=c9f86fc4193c8451d48250504f9445359170588f; __utmt=1; __utma=1.992022089.1455724859.1455724859.1455724859.1; __utmb=1.3.10.1455724859; __utmc=1; __utmz=1.1455724859.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); Hm_lvt_1db88642e346389874251b5a1eded6e3=1455724859; Hm_lpvt_1db88642e346389874251b5a1eded6e3=1455724875'
+}
 
 # Enable or disable spider middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
