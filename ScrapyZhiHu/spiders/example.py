@@ -31,5 +31,6 @@ class Zhihu(scrapy.Spider):
             return Request("http://www.zhihu.com/",callback=self.zhihu)
 
     def zhihu(self,response):
-        print response.body
+        f = open('zhihu.html','w')
+        f.write(response.body)
 
