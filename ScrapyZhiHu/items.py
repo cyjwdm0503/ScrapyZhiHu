@@ -12,3 +12,8 @@ class ScrapyzhihuItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
     pass
+
+
+class ScrapyUsers(scrapy.Item):
+    href = scrapy.Field()
+    name = scrapy.Field()

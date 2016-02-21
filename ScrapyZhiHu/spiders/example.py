@@ -4,6 +4,7 @@ from scrapy.selector import Selector
 from scrapy.http.request import Request
 from scrapy.http import FormRequest
 import  json
+from ..items import ScrapyUsers
 
 
 class Zhihu(scrapy.Spider):
@@ -25,6 +26,7 @@ class Zhihu(scrapy.Spider):
 
     offset=0
     start=0
+
     #获取对应信息，进行登录
     def parse(self, response):
         self.xsrf = Selector(response).xpath('//input[@name="_xsrf"]/@value').extract()[0]
@@ -100,3 +102,91 @@ class Zhihu(scrapy.Spider):
         self.start=self.start+20
         self.offset=self.start+40
         return self.FormRequestNextPage(s,"https://www.zhihu.com/node/TopStory2FeedList",self.offset,self.start)
+
+
+
+class ZhiHuCollect(scrapy.Spider):
+    name="ZhiHuCollect"
+    start_urls=("https://www.zhihu.com/#signin",)
+    allowed_domains=["zhihu.com"]
+    xsrf=""
+    flowerscount = 0
+    maxflowerscount = 0
+    def parse(self, response):
+        self.xsrf = Selector(response).xpath('//input[@name="_xsrf"]/@value').extract()[0]
+        print self.xsrf
+        return  self.reqlogin()
+
+
+    #请求登陆
+    def reqlogin(self):
+        return [scrapy.FormRequest("https://www.zhihu.com/login/email",
+                                   formdata={'_xsrf':self.xsrf,
+                                             'email': 'cyjwdm0503@foxmail.com',
+                                             'password': '4523608',
+                                             'remember_me':'true'},
+                                   callback=self.rsplogin)]
+
+    #登陆回调
+    def rsplogin(self,response):
+        self.flowerscount = 0
+        return Request("https://www.zhihu.com/people/cyjwdm0503/followees",callback=self.rspflowers)
+
+    def rspflowers(self,response):
+        #返回初始长度的关注人列表
+        href_name_list = Selector(response).xpath('//a[@class="zg-link"]')
+        self.flowerscount =  len(href_name_list)+self.flowerscount
+        self.maxflowerscount  = Selector(response).xpath('//div[@class="zm-profile-side-following zg-clear"]/a/strong/text()').extract()[0]
+        print "maxfollowers"+str(self.maxflowerscount)
+
+        for href_name in href_name_list:
+            users = ScrapyUsers()
+            users['href'] =  href_name.xpath('@href').extract()
+            users['name'] =  href_name.xpath('text()').extract()[0].encode('gbk')
+            print users['href']
+            print users['name']
+            #href = Selector(text=href_name).xpath('//@href').extract()
+            #print href
+
+        return self.reqmorefollowers(response)
+
+
+    #获取更多关注者
+    def reqmorefollowers(self,response):
+        if self.flowerscount >= self.maxflowerscount:
+            return  None
+
+        more_buf = self.getMoreFolloweer(response,self.flowerscount)
+        return scrapy.FormRequest("https://www.zhihu.com/node/ProfileFolloweesListV2",
+                                      formdata={'params':more_buf,
+                                         'method':'next',
+                                         '_xsrf':self.xsrf},
+                                  method="POST",
+                                  headers=response.request.headers,
+                                  callback=self.rspmorefollows)
+
+    #获取更多的关注人取到offset .hash_id
+    def getMoreFolloweer(self,response,nextoffset):
+        data_init = Selector(response).xpath('//div[@class="zh-general-list clearfix"]/@data-init').extract()[0]
+        print data_init
+        dc = json.loads(data_init)
+        dc['params']['offset'] = nextoffset
+        print json.dumps(dc['params'])
+        return json.dumps(dc['params'])
+
+
+    #更多关注者回调
+    def rspmorefollows(self,js):
+        res = json.loads(js.body)
+        for response in res['msg']:
+            href_name_list = Selector(text=response).xpath('//a[@class="zg-link"]')
+            self.flowerscount =  len(href_name_list)+self.flowerscount
+            for href_name in href_name_list:
+                users = ScrapyUsers()
+                users['href'] =  href_name.xpath('@href').extract()
+                users['name'] =  href_name.xpath('text()').extract()[0].encode('gbk')
+                print users['href']
+                print users['name']
+
+        if self.flowerscount >= self.maxflowerscount:
+            return  None
