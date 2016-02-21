@@ -22,6 +22,9 @@ class Zhihu(scrapy.Spider):
         'Accept-Language': 'zh-CN,zh;q=0.8,en;q=0.6',
        #$a 'Cookie':'_ga=GA1.2.1555722577.1432823794;q_c1=29afeb27dbc34d9e90e5c5c3f5d09aad|1455936022000|1455936022000; cap_id="NTk0YjU2OWQ1OWY3NGJiZTg5ZmEzZjA2YjQ4NTFkY2Q=|1455936022|337db9eac58eb8818504d9147922bdea477f2b75"; _za=8793075f-c2fc-41c0-bf94-b713f2f42180; z_c0="QUFCQUNIZ2hBQUFYQUFBQVlRSlZUUnRmNzFZWWZiWEFlVGVJbmJUaGI0NmRKMVN2cG1FLW1RPT0=|1455936027|23e4203cbd991f8e1ec756769ee4d67abf740e8f"; aliyungf_tc=AQAAAIri6mt+UQYAXRLAtzsjD2l2jYS/; __utmt=1; __utma=51854390.1555722577.1432823794.1455942772.1455943503.2; __utmb=51854390.3.9.1455952556043; __utmc=51854390; __utmz=51854390.1455942772.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); __utmv=51854390.100-1|2=registration_date=20131128=1^3=entry_date=20131128=1'
     }
+
+    offset=0
+    start=0
     #获取对应信息，进行登录
     def parse(self, response):
         self.xsrf = Selector(response).xpath('//input[@name="_xsrf"]/@value').extract()[0]
@@ -53,40 +56,47 @@ class Zhihu(scrapy.Spider):
 
         self.OutPutFile("topic.txt",sigletopic)
         self.OutPutFile("question.txt",singlequestion)
-        return self.FormRequestNextPage(response,"https://www.zhihu.com/node/TopStory2FeedList")
+        return self.FormRequestNextPage(response,"https://www.zhihu.com/node/TopStory2FeedList",self.offset,self.start)
 
 
     def OutPutFile(self,filename,strlist):
         f = open(filename,'a+')
         for k in strlist:
-            print k
-            k = k.encode("utf8")+"\n"
+            k = k.encode("gbk")+"\n"
+          #  print k
             f.write(k)
         return
 
 
     #post 方式下一页
-    def FormRequestNextPage(self,response,url):
+    def FormRequestNextPage(self,response,url,offset,start):
         print url
         self.postheader['Cookie']=response.request.headers['Cookie']
-        return scrapy.FormRequest(url,formdata={'params':'{"offset":20,"start":"20"}',
+        return scrapy.FormRequest(url,formdata={'params':'{"offset":'+str(offset)+',"start":"'+str(start)+'"}',
                                          'method':'next',
                                          '_xsrf':self.xsrf},
                                   method="POST",
                                   headers=response.request.headers,
-                                  callback=self.ScrapyNextIndex)
+                                  callback=self.ScrapyNextIndexJson)
 
-    def ScrapyNextIndex(self,s):
+    def ScrapyNextIndexJson(self,s):
         res = json.loads(s.body)
         for response in res['msg']:
             #获取对应的topic_question
             topic_question = Selector(text= response).xpath('//div[@class="feed-main"]')
+            topic = topic_question.xpath('//div[@class="source"]/a/text()').extract()
+            question = topic_question.xpath('//div[@class="content"]/h2/a/text()').extract()
             #首页问题主题
-            topic = (Selector(text = response).xpath('//div[@class="feed-main"]/div[@class="source"]/a/text()').extract())
+            #topic = (Selector(text = response).xpath('//div[@class="feed-main"]/div[@class="source"]/a/text()').extract())
             sigletopic = set(topic)
 
             ##首页问题内容
-            question = (Selector(text=response).xpath('//div[@class="feed-main"]/div[@class="content"]/h2/a/text()').extract())
+            #question = (Selector(text=response).xpath('//div[@class="feed-main"]/div[@class="content"]/h2/a/text()').extract())
             singlequestion = set(question)
-            self.OutPutFile("topic.txt",sigletopic)
+            self.OutPutFile("question.txt",sigletopic)
             self.OutPutFile("question.txt",singlequestion)
+
+
+        self.start=self.start+20
+        self.offset=self.start+40
+        return self.FormRequestNextPage(s,"https://www.zhihu.com/node/TopStory2FeedList",self.offset,self.start)
