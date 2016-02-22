@@ -110,6 +110,8 @@ class ZhiHuCollect(scrapy.Spider):
     start_urls=("https://www.zhihu.com/#signin",)
     allowed_domains=["zhihu.com"]
     xsrf=""
+
+    reqmorefollowerparam = None
     flowerscount = 0
     maxflowerscount = 0
     def parse(self, response):
@@ -129,9 +131,15 @@ class ZhiHuCollect(scrapy.Spider):
 
     #登陆回调
     def rsplogin(self,response):
-        self.flowerscount = 0
+        return  self.reqfollowers()
+
+    #查询第一次关注者
+    def reqfollowers(self):
+        self.initgetMoreFolloweer()
         return Request("https://www.zhihu.com/people/cyjwdm0503/followees",callback=self.rspflowers)
 
+
+    #第一次查询关注者回调
     def rspflowers(self,response):
         #返回初始长度的关注人列表
         href_name_list = Selector(response).xpath('//a[@class="zg-link"]')
@@ -145,11 +153,18 @@ class ZhiHuCollect(scrapy.Spider):
             users['name'] =  href_name.xpath('text()').extract()[0].encode('gbk')
             print users['href']
             print users['name']
+            users.Save()
             #href = Selector(text=href_name).xpath('//@href').extract()
             #print href
 
         return self.reqmorefollowers(response)
 
+
+    #第一次调用时候的初始化更多关注者是的信息
+    def initgetMoreFolloweer(self):
+        self.flowerscount = 0
+        self.maxflowerscount  = 0
+        self.reqmorefollowerparam =  None
 
     #获取更多关注者
     def reqmorefollowers(self,response):
@@ -167,12 +182,18 @@ class ZhiHuCollect(scrapy.Spider):
 
     #获取更多的关注人取到offset .hash_id
     def getMoreFolloweer(self,response,nextoffset):
-        data_init = Selector(response).xpath('//div[@class="zh-general-list clearfix"]/@data-init').extract()[0]
-        print data_init
-        dc = json.loads(data_init)
-        dc['params']['offset'] = nextoffset
-        print json.dumps(dc['params'])
-        return json.dumps(dc['params'])
+        if self.reqmorefollowerparam == None:
+            data_init = Selector(response).xpath('//div[@class="zh-general-list clearfix"]/@data-init').extract()[0]
+            print data_init
+            dc = json.loads(data_init)
+            dc['params']['offset'] = nextoffset
+            self.reqmorefollowerparam =  json.dumps(dc['params'])
+            return self.reqmorefollowerparam
+        else:
+            self.reqmorefollowerparam = json.loads(self.reqmorefollowerparam)
+            self.reqmorefollowerparam['offset']=nextoffset
+            self.reqmorefollowerparam = json.dumps(self.reqmorefollowerparam)
+            return  self.reqmorefollowerparam
 
 
     #更多关注者回调
@@ -187,6 +208,10 @@ class ZhiHuCollect(scrapy.Spider):
                 users['name'] =  href_name.xpath('text()').extract()[0].encode('gbk')
                 print users['href']
                 print users['name']
+                users.Save()
 
         if self.flowerscount >= self.maxflowerscount:
             return  None
+        else:
+            #申请下一次关注者回调
+            self.reqmorefollowers(js)

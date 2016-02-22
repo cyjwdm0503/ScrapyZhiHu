@@ -17,3 +17,4 @@ class ScrapyzhihuItem(scrapy.Item):
 class ScrapyUsers(scrapy.Item):
     href = scrapy.Field()
     name = scrapy.Field()
+
