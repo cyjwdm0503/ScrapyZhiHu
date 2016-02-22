@@ -36,9 +36,9 @@ COOKIES_ENABLED=True
 #TELNETCONSOLE_ENABLED=False
 
 # Override the default request headers:
-DEFAULT_REQUEST_HEADERS = {
-   'Accept': 'application/json, text/javascript, */*; q=0.01',
-   'Accept-Language': 'en'}
+#DEFAULT_REQUEST_HEADERS = {
+#   'Accept': 'application/json, text/javascript, */*; q=0.01',
+#   'Accept-Language': 'en'}
 
 # Enable or disable spider middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
