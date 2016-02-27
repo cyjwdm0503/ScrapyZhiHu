@@ -18,3 +18,14 @@ class ScrapyUsers(scrapy.Item):
     href = scrapy.Field()
     name = scrapy.Field()
 
+
+    def Save(self):
+        pass
+
+
+class ScrapyCollections(scrapy.Item):
+    user_href = scrapy.Field()
+    collection_name = scrapy.Field()
+    collection_url = scrapy.Field()
+
+

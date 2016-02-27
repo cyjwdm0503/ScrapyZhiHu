@@ -4,7 +4,7 @@ from scrapy.selector import Selector
 from scrapy.http.request import Request
 from scrapy.http import FormRequest
 import  json
-from ..items import ScrapyUsers
+from ..items import *
 
 
 class Zhihu(scrapy.Spider):
@@ -131,12 +131,14 @@ class ZhiHuCollect(scrapy.Spider):
 
     #登陆回调
     def rsplogin(self,response):
-        return  self.reqfollowers()
+        #先获取自己的收藏在查询关注着
+        return self.reqCollections("https://www.zhihu.com/people/cyjwdm0503")
+        return  self.reqfollowers("https://www.zhihu.com/people/cyjwdm0503")
 
     #查询第一次关注者
-    def reqfollowers(self):
+    def reqfollowers(self,url):
         self.initgetMoreFolloweer()
-        return Request("https://www.zhihu.com/people/cyjwdm0503/followees",callback=self.rspflowers)
+        return Request(url+"/followees",callback=self.rspflowers)
 
 
     #第一次查询关注者回调
@@ -214,4 +216,34 @@ class ZhiHuCollect(scrapy.Spider):
             return  None
         else:
             #申请下一次关注者回调
-            self.reqmorefollowers(js)
+            return self.reqmorefollowers(js)
+
+    def reqCollections(self,peopleurl):
+        collections_url = peopleurl
+        return  Request(collections_url+"/collections",callback=self.rspCollections)
+
+
+    def rspCollections(self,response):
+        collections_list = Selector(response).xpath('//a[@class="zm-profile-fav-item-title"]')
+        for collection_name in collections_list:
+            collection_url =  "https://www.zhihu.com"+collection_name.xpath('@href').extract()[0]
+            collection_name = collection_name.xpath('text()').extract()[0].encode('gbk')
+            collections = ScrapyCollections()
+            collections['user_href'] = self.getLChildUrl(  str(response.url),1)
+            collections['collection_name'] = collection_name
+            collections['collection_url'] = collection_url
+            print collection_url, collection_name,collections['user_href']
+
+    #获取子字符串 endPoint 为去掉多少位"/"
+    def getLChildUrl(self,url,endPoint=None):
+        buffer = str(url)
+        point  = len(buffer)
+        currentpos = 0
+        lastpos = 0
+        for point in buffer:
+            if point == '/' or point =='\'':
+                lastpos = currentpos
+            currentpos = currentpos+1
+
+        print lastpos
+        return buffer[0:lastpos]
