@@ -136,9 +136,9 @@ class ZhiHuCollect(scrapy.Spider):
         return  self.reqfollowers("https://www.zhihu.com/people/cyjwdm0503")
 
     #查询第一次关注者
-    def reqfollowers(self,url):
+    def reqfollowers(self,peopleurl):
         self.initgetMoreFolloweer()
-        return Request(url+"/followees",callback=self.rspflowers)
+        return Request(peopleurl+"/followees",callback=self.rspflowers)
 
 
     #第一次查询关注者回调
@@ -233,6 +233,8 @@ class ZhiHuCollect(scrapy.Spider):
             collections['collection_name'] = collection_name
             collections['collection_url'] = collection_url
             print collection_url, collection_name,collections['user_href']
+            ret  = self.reqColletion(collection_url)
+        return ret
 
     #获取子字符串 endPoint 为去掉多少位"/"
     def getLChildUrl(self,url,endPoint=None):
@@ -247,3 +249,27 @@ class ZhiHuCollect(scrapy.Spider):
 
         print lastpos
         return buffer[0:lastpos]
+
+    #查询一个收藏下面的所有问题与答案
+    def reqColletion(self,collect_url):
+        return Request(collect_url,callback=self.rspCollection)
+
+    def rspCollection(self,response):
+        collection_name = Selector(response).xpath('//h2[@class="zm-item-title zm-editable-content"]/text()').extract()[0]
+
+        question_answers = Selector(response).xpath('//div[@class="zm-item"]').extract()
+        question_href= None
+        question_name = None
+        for question in question_answers:
+            question_answer =  Selector(text=question)
+            if len(question_answer.xpath('//h2[@class="zm-item-title"]').extract()) != 0:
+                question_href  = question_answer.xpath('//h2[@class="zm-item-title"]/a/@href').extract()[0]
+                question_name = question_answer.xpath('//h2[@class="zm-item-title"]/a/text()').extract()[0]
+
+            answer_user_href = question_answer.xpath('//div[@class="zm-item-answer-author-info"]/a/@href').extract()[0]
+            answer_user_name = question_answer.xpath('//div[@class="zm-item-answer-author-info"]/a/text()').extract()[0]
+            answer_href = question_answer.xpath('//div[@class="zm-item-rich-text js-collapse-body"]/@data-entry-url').extract()[0]
+            answer_head = question_answer.xpath('//div[@class="zh-summary summary clearfix"]/text()').extract()[0]
+            print collection_name,question_href,question_name,answer_user_href,answer_user_name,answer_href,answer_head
+
+
