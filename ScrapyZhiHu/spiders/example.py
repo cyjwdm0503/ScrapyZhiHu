@@ -64,7 +64,7 @@ class Zhihu(scrapy.Spider):
     def OutPutFile(self,filename,strlist):
         f = open(filename,'a+')
         for k in strlist:
-            k = k.encode("gbk")+"\n"
+            k = k.encode("utf-8")+"\n"
           #  print k
             f.write(k)
         return
@@ -151,8 +151,8 @@ class ZhiHuCollect(scrapy.Spider):
 
         for href_name in href_name_list:
             users = ScrapyUsers()
-            users['href'] =  href_name.xpath('@href').extract()
-            users['name'] =  href_name.xpath('text()').extract()[0].encode('gbk')
+            users['href'] =  href_name.xpath('@href').extract()[0].encode('utf-8')
+            users['name'] =  href_name.xpath('text()').extract()[0].encode('utf-8')
             print users['href']
             print users['name']
             #yield  self.reqCollections(href_name.xpath('@href').extract()[0].encode('gbk'))
@@ -207,12 +207,12 @@ class ZhiHuCollect(scrapy.Spider):
             self.flowerscount =  len(href_name_list)+self.flowerscount
             for href_name in href_name_list:
                 users = ScrapyUsers()
-                users['href'] =  href_name.xpath('@href').extract()
-                users['name'] =  href_name.xpath('text()').extract()[0].encode('gbk')
+                users['href'] =  href_name.xpath('@href').extract()[0].encode('utf-8')
+                users['name'] =  href_name.xpath('text()').extract()[0].encode('utf-8')
                 print users['href']
                 print users['name']
                 #查询对应people的收藏
-                peopleurl = href_name.xpath('@href').extract()[0].encode('gbk')
+                peopleurl = href_name.xpath('@href').extract()[0].encode('utf-8')
                 #yield self.reqCollections(href_name.xpath('@href').extract()[0].encode('gbk'))
                 yield self.reqfollowers(peopleurl)
 
@@ -233,7 +233,7 @@ class ZhiHuCollect(scrapy.Spider):
         collections_list = Selector(response).xpath('//a[@class="zm-profile-fav-item-title"]')
         for collection_name in collections_list:
             collection_url =  "https://www.zhihu.com"+collection_name.xpath('@href').extract()[0]
-            collection_name = collection_name.xpath('text()').extract()[0].encode('gbk')
+            collection_name = collection_name.xpath('text()').extract()[0].encode('utf-8')
             collections = ScrapyCollections()
             collections['user_href'] = self.getLChildUrl(  str(response.url),1)
             collections['collection_name'] = collection_name
