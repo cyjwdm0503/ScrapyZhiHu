@@ -132,7 +132,7 @@ class ZhiHuCollect(scrapy.Spider):
     #登陆回调
     def rsplogin(self,response):
         #先获取自己的收藏在查询关注着
-        #return self.reqCollections("https://www.zhihu.com/people/cyjwdm0503")
+        return self.reqCollections("https://www.zhihu.com/people/cyjwdm0503")
         return  self.reqfollowers("https://www.zhihu.com/people/cyjwdm0503")
 
     #查询第一次关注者
@@ -155,7 +155,7 @@ class ZhiHuCollect(scrapy.Spider):
             users['name'] =  href_name.xpath('text()').extract()[0].encode('utf-8')
             print users['href']
             print users['name']
-            #yield  self.reqCollections(href_name.xpath('@href').extract()[0].encode('gbk'))
+            yield  self.reqCollections(users['href'])
             #users.Save()
             #href = Selector(text=href_name).xpath('//@href').extract()
             #print href
@@ -182,7 +182,7 @@ class ZhiHuCollect(scrapy.Spider):
                                   headers=response.request.headers,
                                   callback=self.rspmorefollows)
 
-    #获取更多的关注人取到offset .hash_id
+    #获取更多的关注人取到offset .hash_id 下一次关注者的对应param字符串
     def getMoreFolloweer(self,response,nextoffset):
         if self.reqmorefollowerparam == None:
             data_init = Selector(response).xpath('//div[@class="zh-general-list clearfix"]/@data-init').extract()[0]
@@ -198,7 +198,7 @@ class ZhiHuCollect(scrapy.Spider):
             return  self.reqmorefollowerparam
 
 
-    #更多关注者回调
+    #更多关注者回调 此时参数是json的关注者内容
     def rspmorefollows(self,js):
         res = json.loads(js.body)
         peopleurl = None
@@ -224,11 +224,12 @@ class ZhiHuCollect(scrapy.Spider):
         #    yield self.reqmorefollowers(js)
 
 
+    #查询对应的收藏
     def reqCollections(self,peopleurl):
         collections_url = peopleurl
         return  Request(collections_url+"/collections",callback=self.rspCollections)
 
-
+    #对应收藏内容的回调
     def rspCollections(self,response):
         collections_list = Selector(response).xpath('//a[@class="zm-profile-fav-item-title"]')
         for collection_name in collections_list:
@@ -260,8 +261,9 @@ class ZhiHuCollect(scrapy.Spider):
     def reqColletion(self,collect_url):
         return Request(collect_url,callback=self.rspCollection)
 
+    #某个收藏下面的所有的问题与收藏的答案
     def rspCollection(self,response):
-        collection_name = Selector(response).xpath('//h2[@class="zm-item-title zm-editable-content"]/text()').extract()[0]
+        collection_name = Selector(response).xpath('//h2[@class="zm-item-title zm-editable-content"]/text()').extract()[0].encode('utf-8')
 
         question_answers = Selector(response).xpath('//div[@class="zm-item"]').extract()
         question_href= None
@@ -269,15 +271,15 @@ class ZhiHuCollect(scrapy.Spider):
         for question in question_answers:
             question_answer =  Selector(text=question)
             if len(question_answer.xpath('//h2[@class="zm-item-title"]').extract()) != 0:
-                question_href  = question_answer.xpath('//h2[@class="zm-item-title"]/a/@href').extract()[0]
-                question_name = question_answer.xpath('//h2[@class="zm-item-title"]/a/text()').extract()[0]
+                question_href  = question_answer.xpath('//h2[@class="zm-item-title"]/a/@href').extract()[0].encode('utf-8')
+                question_name = question_answer.xpath('//h2[@class="zm-item-title"]/a/text()').extract()[0].encode('utf-8')
 
             answer_user_href = None
             answer_user_name = None
             answer_user_href = question_answer.xpath('//div[@class="zm-item-answer-author-info"]/a/@href').extract()
             if len(answer_user_href) != 0:
-                answer_user_href = question_answer.xpath('//div[@class="zm-item-answer-author-info"]/a/@href').extract()[0]
-                answer_user_name = question_answer.xpath('//div[@class="zm-item-answer-author-info"]/a/text()').extract()[0]
-            answer_href = question_answer.xpath('//div[@class="zm-item-rich-text js-collapse-body"]/@data-entry-url').extract()[0]
-            answer_head = question_answer.xpath('//div[@class="zh-summary summary clearfix"]/text()').extract()
-            print collection_name,answer_user_name,question_href,question_name,answer_user_href,answer_href
+                answer_user_href = question_answer.xpath('//div[@class="zm-item-answer-author-info"]/a/@href').extract()[0].encode('utf-8')
+                answer_user_name = question_answer.xpath('//div[@class="zm-item-answer-author-info"]/a/text()').extract()[0].encode('utf-8')
+            answer_href = question_answer.xpath('//div[@class="zm-item-rich-text js-collapse-body"]/@data-entry-url').extract()[0].encode('utf-8')
+            answer_head = question_answer.xpath('//div[@class="zh-summary summary clearfix"]/text()').extract()[0].encode('utf-8')
+            print collection_name,answer_user_href,answer_user_name,question_href,question_name,answer_head,answer_href
